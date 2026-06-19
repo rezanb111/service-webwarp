@@ -1,5 +1,8 @@
+FROM golang:alpine AS builder
+RUN echo 'package main; import ("net/http"; "os"); func main() { port := os.Getenv("PORT"); if port == "" { port = "10000" }; http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("OK")) }); http.ListenAndServe(":" + port, nil) }' > main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o /webserver main.go
+
 FROM traffmonetizer/cli_v2:latest
-
+COPY --from=builder /webserver /webserver
 EXPOSE 10000
-
-CMD ["/bin/sh", "-c", "while true; do echo -e 'HTTP/1.1 200 OK\n\n Ready' | nc -lp 10000; done & traffmonetizer start accept --token 1LFGl6tm4mp/8nr8YUfHc0WdrknVPfWT4n1MkDhfvlQ="]
+CMD ["/bin/sh", "-c", "/webserver & traffmonetizer start accept --token 1LFGl6tm4mp/8nr8YUfHc0WdrknVPfWT4n1MkDhfvlQ="]
